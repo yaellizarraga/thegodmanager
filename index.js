@@ -5,14 +5,15 @@ const MongoConnection = require('./config/db');
 
 // Server
 const server = new ApolloServer({
-    typeDefs,
-    resolvers
+  typeDefs,
+  resolvers,
 });
 
 // Init DB connection
 MongoConnection();
 
 // Start server
-server.listen().then( ({ url }) => {
-    console.log(`server running on ${url}`);
+server.listen().then(({ url }) => {
+  // eslint-disable-next-line no-console
+  console.log(`server running on ${url}`);
 });
