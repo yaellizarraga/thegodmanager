@@ -15,6 +15,11 @@
         "quotes":"warn",
         "indent":"warn",
         "no-unused-vars":"warn",
-        "space-in-parens":"warn"
+        "space-in-parens":"warn",
+        "comma-dangle":"warn",
+        "no-trailing-spaces":"warn",
+        "max-len":"off",
+        "semi":"warn",
+        "eol-last":"warn"
     }
 }

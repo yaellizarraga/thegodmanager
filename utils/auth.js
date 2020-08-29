@@ -1,19 +1,18 @@
 const User = require('../models/User');
 
 const userExist = async (email) => {
-    const userData = await User.findOne({ email });
-    if(userData) {
-        return userData;
-    } else {
-        return false;
-    }
+  const userData = await User.findOne({ email });
+  if (userData) {
+    return userData;
+  }
+  return false;
 };
 
 const doLogin = () => {
-    return;
+  throw new Error('Method not implemented');
 };
 
 module.exports = {
-    userExist,
-    doLogin,
+  userExist,
+  doLogin,
 };
