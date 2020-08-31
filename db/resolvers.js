@@ -1,11 +1,35 @@
 const User = require('../models/User');
+const Product = require('../models/Product');
 const { encryptPassword, decryptPassword } = require('../utils/hash');
 const { userExist } = require('../utils/auth');
 const { createToken, verifyToken } = require('../utils/jwt');
 
 const resolvers = {
   Query: {
-    getUser: async (_, { token }) => verifyToken(token),
+    getUser: async (_, { token }) => verifyToken(token, process.env.JWT_SECRET),
+    getProducts: async () => {
+      try {
+        const products = await Product.find({});
+        return products;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return null;
+      }
+    },
+    getProduct: async (_, { id }) => {
+      try {
+        const product = await Product.findById(id);
+        if (!product) {
+          throw new Error('Product does not exist');
+        }
+        return product;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return null;
+      }
+    },
   },
   Mutation: {
     newUser: async (_, { input }) => {
@@ -37,8 +61,6 @@ const resolvers = {
       if (!user) {
         throw new Error('User not exist');
       }
-      // eslint-disable-next-line no-console
-      console.log(user);
       if (!await decryptPassword(user.password, password)) {
         throw new Error('Incorrect password');
       }
@@ -46,6 +68,17 @@ const resolvers = {
       return {
         token: createToken(user.id, process.env.JWT_SECRET, '24h'),
       };
+    },
+    newProduct: async (_, { input }) => {
+      try {
+        const product = new Product(input);
+        const result = await product.save();
+        return result;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return false;
+      }
     },
   },
 };

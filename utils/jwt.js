@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 
-const createToken = async (userId, secret, expiration) => jwt.sign({ userId }, secret, { expiresIn: expiration });
+const createToken = async (id, secret, expiration) => jwt.sign({ id }, secret, { expiresIn: expiration });
 
-const verifyToken = async (token) => jwt.verify(token, process.env.JWT_SECRET);
+const verifyToken = async (token, secret) => jwt.verify(token, secret);
 
 module.exports = {
   createToken,
