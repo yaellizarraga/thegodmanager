@@ -20,9 +20,11 @@ const resolvers = {
     getProduct: async (_, { id }) => {
       try {
         const product = await Product.findById(id);
+
         if (!product) {
           throw new Error('Product does not exist');
         }
+
         return product;
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -36,7 +38,7 @@ const resolvers = {
       const { email, password } = input;
 
       // Validate if user is already registered
-      const exist = await User.findOne({ email });
+      const exist = await userExist(email);
       if (exist) {
         throw new Error('The user is already registered');
       }
@@ -77,6 +79,29 @@ const resolvers = {
       } catch (error) {
         // eslint-disable-next-line no-console
         console.log(error);
+        return false;
+      }
+    },
+    editProduct: async (_, { id, input }) => {
+      let product = await Product.findById(id);
+
+      if (!product) {
+        throw new Error('Product does not exist');
+      }
+
+      product = await Product.findOneAndUpdate({ _id: id }, input, { new: true });
+
+      return product;
+    },
+    deleteProduct: async (_, { id }) => {
+      try {
+        const product = await Product.findById(id);
+        if (!product) {
+          throw new Error('Product does not exist');
+        }
+        await Product.findOneAndDelete({ _id: id });
+        return true;
+      } catch (error) {
         return false;
       }
     },
