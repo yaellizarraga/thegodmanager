@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Product = require('../models/Product');
+const Client = require('../models/Client');
 const { encryptPassword, decryptPassword } = require('../utils/hash');
 const { userExist } = require('../utils/auth');
 const { createToken, verifyToken } = require('../utils/jwt');
@@ -32,6 +33,27 @@ const resolvers = {
         return null;
       }
     },
+    getClients: async () => {
+      try {
+        const clients = await Client.find({});
+        return clients;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return null;
+      }
+    },
+    // eslint-disable-next-line no-empty-pattern
+    getClient: async (_, {}, ctx) => {
+      try {
+        const clients = await Client.find({ salesman: ctx.user.id.toString() });
+        return clients;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return null;
+      }
+    },
   },
   Mutation: {
     newUser: async (_, { input }) => {
@@ -49,6 +71,7 @@ const resolvers = {
       try {
         const user = new User(input);
         user.save();
+
         return user;
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -63,6 +86,7 @@ const resolvers = {
       if (!user) {
         throw new Error('User not exist');
       }
+
       if (!await decryptPassword(user.password, password)) {
         throw new Error('Incorrect password');
       }
@@ -75,6 +99,7 @@ const resolvers = {
       try {
         const product = new Product(input);
         const result = await product.save();
+
         return result;
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -96,13 +121,35 @@ const resolvers = {
     deleteProduct: async (_, { id }) => {
       try {
         const product = await Product.findById(id);
+
         if (!product) {
           throw new Error('Product does not exist');
         }
+
         await Product.findOneAndDelete({ _id: id });
         return true;
       } catch (error) {
         return false;
+      }
+    },
+    newClient: async (_, { input }, ctx) => {
+      const { email } = input;
+      try {
+        const client = await Client.findOne({ email });
+
+        if (client) {
+          throw new Error('Client is registered');
+        }
+
+        const newClient = new Client(input);
+        newClient.salesman = ctx.user.id;
+        const result = newClient.save();
+
+        return result;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return null;
       }
     },
   },
