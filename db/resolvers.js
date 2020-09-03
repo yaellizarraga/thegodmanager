@@ -1,3 +1,4 @@
+/* eslint-disable no-empty-pattern */
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Client = require('../models/Client');
@@ -43,8 +44,7 @@ const resolvers = {
         return null;
       }
     },
-    // eslint-disable-next-line no-empty-pattern
-    getClient: async (_, {}, ctx) => {
+    getClientsBySalesman: async (_, {}, ctx) => {
       try {
         const clients = await Client.find({ salesman: ctx.user.id.toString() });
         return clients;
@@ -53,6 +53,19 @@ const resolvers = {
         console.log(error);
         return null;
       }
+    },
+    getClient: async (_, { id }, ctx) => {
+      const client = await Client.findById(id);
+
+      if (!client) {
+        throw new Error('Client does not exist');
+      }
+
+      if (client.salesman.toString() !== ctx.user.id) {
+        throw new Error('Forbidden');
+      }
+
+      return client;
     },
   },
   Mutation: {
@@ -150,6 +163,48 @@ const resolvers = {
         // eslint-disable-next-line no-console
         console.log(error);
         return null;
+      }
+    },
+    editClient: async (_, { id, input }, ctx) => {
+      let client = await Client.findById(id);
+
+      if (!client) {
+        throw new Error('Client does not exist');
+      }
+
+      if (client.salesman.toString() !== ctx.user.id) {
+        throw new Error('Forbidden');
+      }
+
+      try {
+        client = await Client.findOneAndUpdate({ _id: id }, input, { new: true });
+
+        return client;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return false;
+      }
+    },
+    deleteClient: async (_, { id }, ctx) => {
+      let client = await Client.findById(id);
+
+      if (!client) {
+        throw new Error('Client does not exist');
+      }
+
+      if (client.salesman.toString() !== ctx.user.id) {
+        throw new Error('Forbidden');
+      }
+
+      try {
+        client = await Client.findOneAndDelete({ _id: id });
+
+        return true;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error);
+        return false;
       }
     },
   },
