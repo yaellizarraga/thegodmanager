@@ -2,6 +2,7 @@
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Client = require('../models/Client');
+const Order = require('../models/Order');
 const { encryptPassword, decryptPassword } = require('../utils/hash');
 const { userExist } = require('../utils/auth');
 const { createToken, verifyToken } = require('../utils/jwt');
@@ -47,6 +48,7 @@ const resolvers = {
     getClientsBySalesman: async (_, {}, ctx) => {
       try {
         const clients = await Client.find({ salesman: ctx.user.id.toString() });
+
         return clients;
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -66,6 +68,36 @@ const resolvers = {
       }
 
       return client;
+    },
+    getOrders: async () => {
+      try {
+        const orders = await Order.find({});
+
+        return orders;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    getOrdersBySalesman: async (_, {}, ctx) => {
+      try {
+        const orders = await Order.find({ salesman: ctx.user.id });
+
+        return orders;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    getOrderById: async (_, { id }, ctx) => {
+      // Check if order exist
+      const order = await Order.findById(id);
+
+      if (!order) {
+        throw new Error('Order does not exist');
+      }
+
+      if (order.salesman.toString() !== ctx.user.id) {
+        throw new Error('Forbidden');
+      }
     },
   },
   Mutation: {
@@ -206,6 +238,84 @@ const resolvers = {
         console.log(error);
         return false;
       }
+    },
+    newOrder: async (_, { input }, ctx) => {
+      const { client } = input;
+
+      // Verify if client exist
+      const clientExist = await Client.findById(client);
+
+      if (!clientExist) {
+        throw new Error('Client does not exist');
+      }
+
+      // Verify if client is a salesman's client
+      if (clientExist.salesman.toString() !== ctx.user.id) {
+        throw new Error('Forbidden');
+      }
+
+      // Check if stock is available
+      if (input.order) {
+        // eslint-disable-next-line no-restricted-syntax
+        for await (const product of input.order) {
+          const { id } = product;
+
+          const productInfo = await Product.findById(id);
+
+          if (product.quantity > productInfo.stock) {
+            throw new Error(`Product: ${product.name} stock is not enough`);
+          } else {
+            productInfo.stock -= product.quantity;
+
+            await productInfo.save();
+          }
+        }
+      }
+
+      // Create order
+      const newOrder = new Order(input);
+
+      // Assing order to a salesman
+      newOrder.salesman = ctx.user.id;
+
+      // Save the order in database
+      const result = await newOrder.save();
+      return result;
+    },
+    editOrder: async (_, { id, input }, ctx) => {
+      const orderExist = await Order.findById(id);
+
+      if (!orderExist) {
+        throw new Error('Order does not exist');
+      }
+
+      const clientExist = await Client.findById(input.client);
+
+      if (!clientExist) {
+        throw new Error('Client does not exist');
+      }
+
+      // Verify if client is a salesman's client
+      if (clientExist.salesman.toString() !== ctx.user.id) {
+        throw new Error('Forbidden');
+      }
+
+      // Check if stock is available
+      // eslint-disable-next-line no-restricted-syntax
+      for await (const product of input.order) {
+        const productInfo = await Product.findById(product.id);
+
+        if (product.quantity > productInfo.stock) {
+          throw new Error(`Product: ${product.name} stock is not enough`);
+        } else {
+          productInfo.stock -= product.quantity;
+
+          await productInfo.save();
+        }
+      }
+
+      const result = await Order.findOneAndUpdate({ _id: id }, input, { new: true });
+      return result;
     },
   },
 };

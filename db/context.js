@@ -1,5 +1,6 @@
 /* eslint-disable consistent-return */
 const jwt = require('jsonwebtoken');
+const { AuthenticationError } = require('apollo-server');
 
 const context = ({ req }) => {
   const token = req.headers.authorization || '';
@@ -15,6 +16,8 @@ const context = ({ req }) => {
       console.log(error);
       return null;
     }
+  } else {
+    throw new AuthenticationError('You must be logged in to run querys');
   }
 };
 
